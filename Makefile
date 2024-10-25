@@ -12,3 +12,8 @@ save: ## Save changes into repository automatically.
 	@git add .
 	@git commit -m "Save changes at: $$(date +%s)"
 	@git push
+
+build: ## Build binary for local operating system
+	@go env -w CGO_ENABLED="0"
+	@go generate ./...
+	@go build -ldflags "-s -w" -o zenit-agent-mysql main.go
