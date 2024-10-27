@@ -1,0 +1,8 @@
+# Binaries for programs and plugins
+zenit-agent-mysql
+
+# Test binary, build with `go test -c`
+*.test
+
+# MAC OS X
+.DS_Store

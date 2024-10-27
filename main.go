@@ -51,6 +51,7 @@ func main() {
 	})
 
 	for {
+		CollectVariables()
 		CollectStatus()
 		log.Debug("Wait until next collect metrics.")
 		time.Sleep(Interval)
