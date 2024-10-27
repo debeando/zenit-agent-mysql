@@ -8,12 +8,15 @@ RESET := $(shell tput -Txterm sgr0)
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "${YELLOW}%-16s${GREEN}%s${RESET}\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-save: ## Save changes into repository automatically.
-	@git add .
-	@git commit -m "Save changes at: $$(date +%s)"
-	@git push
+deps: ## Download dependencies
+	@go mod tidy
+	@go mod download
 
 build: ## Build binary for local operating system
 	@go env -w CGO_ENABLED="0"
 	@go generate ./...
 	@go build -ldflags "-s -w" -o zenit-agent-mysql *.go
+
+tests: ## Run tests
+	@go generate ./...
+	@go test ./...
