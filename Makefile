@@ -16,4 +16,4 @@ save: ## Save changes into repository automatically.
 build: ## Build binary for local operating system
 	@go env -w CGO_ENABLED="0"
 	@go generate ./...
-	@go build -ldflags "-s -w" -o zenit-agent-mysql main.go
+	@go build -ldflags "-s -w" -o zenit-agent-mysql *.go
