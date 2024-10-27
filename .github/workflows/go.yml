@@ -1,0 +1,53 @@
+name: Go
+
+on: [push]
+
+env:
+  MYSQL_TEST_USER: gotest
+  MYSQL_TEST_PASS: test
+  MYSQL_TEST_ADDR: 127.0.0.1:3306
+  MYSQL_TEST_CONCURRENT: 1
+  PROXYSQL_TEST_ADDR: 127.0.0.1:3307
+  PROXYSQL_ADMIN_TEST_ADDR: 127.0.0.1:6032
+
+jobs:
+  test:
+    name: Check code quality and run tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_TEST_PASS }}
+          MYSQL_USER: ${{ env.MYSQL_TEST_USER }}
+          MYSQL_PASSWORD: ${{ env.MYSQL_TEST_PASS }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.21
+
+    - name: Get all dependencies
+      run: go get -u ./...
+
+    - name: Format
+      run: diff -u <(echo -n) <(gofmt -d ./)
+
+    - name: Suspicious constructs
+      run: go vet ./...
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Build
+      run: go build -v ./...
