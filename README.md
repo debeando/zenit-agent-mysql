@@ -1,3 +1,3 @@
 # DeBeAndo Zenit Agent MySQL
 
-zenit-agent-mysql is an open source database monitoring tool write in golang.
+Zenit-Agent-MySQL is an open-source database monitoring tool designed for small environments, adapted for Kubernetes, and written in Go.
