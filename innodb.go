@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/debeando/go-common/log"
 	"github.com/debeando/go-common/mysql"
-	"github.com/influxdata/influxdb-client-go/v2"
 )
 
 const SQLInnoDB = "SHOW ENGINE INNODB STATUS"
@@ -109,7 +106,6 @@ func CollectInnoDB() {
 }
 
 func ParseSection(in, name string) {
-	writer := InfluxDBConn.WriteAPIBlocking("debeando", InfluxDBBucket)
 	expression := strings.Join(Sections[name], "")
 	pattern := regexp.MustCompile(expression)
 	matches := pattern.FindAllStringSubmatch(in, -1)
@@ -126,19 +122,11 @@ func ParseSection(in, name string) {
 
 		if value, ok := mysql.ParseNumberValue(matches[0][index]); ok {
 			log.DebugWithFields("MySQL InnoDB", log.Fields{
-				"hostname": MySQLHost,
+				"hostname": Hostname,
 				key:        value,
 			})
 
-			p := influxdb2.NewPointWithMeasurement("mysql_innodb").
-				AddTag("_hostname", MySQLHost).
-				AddField(key, value).
-				SetTime(time.Now())
-
-			err := writer.WritePoint(context.Background(), p)
-			if err != nil {
-				log.Error(err.Error())
-			}
+			InfluxDBWrite("mysql_innodb", key, value)
 		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 )
 
 var Debug string
+var Hostname string
 var Interval time.Duration
 var InfluxDBConn influxdb2.Client
 var InfluxDBHost string
@@ -47,6 +48,8 @@ func init() {
 		Username: MySQLUser,
 	}).DSN()
 
+	Hostname = env.Get("HOSTNAME", MySQLHost)
+
 	if Debug == "true" {
 		log.SetLevel(log.DebugLevel)
 	}
@@ -56,6 +59,7 @@ func main() {
 	log.Info("Start DeBeAndo Zenit Agent for MySQL")
 	log.DebugWithFields("Environment Variables", log.Fields{
 		"DEBUG":           Debug,
+		"HOSTNAME":        Hostname,
 		"INFLUXDB_BUCKET": InfluxDBBucket,
 		"INFLUXDB_HOST":   InfluxDBHost,
 		"INFLUXDB_PORT":   InfluxDBPort,
