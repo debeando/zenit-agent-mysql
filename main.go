@@ -1,56 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/debeando/go-common/env"
 	"github.com/debeando/go-common/log"
 	"github.com/debeando/go-common/mysql"
-	"github.com/influxdata/influxdb-client-go/v2"
 )
 
-var Debug string
+var Debug bool
 var Hostname string
 var Interval time.Duration
-var InfluxDBConn influxdb2.Client
-var InfluxDBHost string
-var InfluxDBPort uint16
-var InfluxDBToken string
-var InfluxDBBucket string
-var MySQLConn *mysql.Connection
-var MySQLDSN string
-var MySQLHost string
-var MySQLPassword string
-var MySQLPort uint16
-var MySQLTimeout uint8
-var MySQLUser string
 
 func init() {
-	Debug = env.Get("DEBUG", "true")
+	Debug = env.GetBool("DEBUG", true)
 	Interval = time.Duration(env.GetInt("INTERVAL", 3)) * time.Second
+	Hostname = env.Get("HOSTNAME", MySQL.Host)
 
-	InfluxDBHost = env.Get("INFLUXDB_HOST", "http://127.0.0.1")
-	InfluxDBPort = env.GetUInt16("INFLUXDB_PORT", 8086)
-	InfluxDBToken = env.Get("INFLUXDB_TOKEN", "")
-	InfluxDBBucket = env.Get("INFLUXDB_BUCKET", "debeando")
-
-	MySQLHost = env.Get("MYSQL_HOST", "127.0.0.1")
-	MySQLPassword = env.Get("MYSQL_PASSWORD", "monitoring")
-	MySQLPort = env.GetUInt16("MYSQL_PORT", 3306)
-	MySQLTimeout = env.GetUInt8("MYSQL_TIMEOUT", 10)
-	MySQLUser = env.Get("MYSQL_USER", "monitoring")
-	MySQLDSN = (&mysql.MySQL{
-		Host:     MySQLHost,
-		Password: MySQLPassword,
-		Port:     MySQLPort,
-		Timeout:  MySQLTimeout,
-		Username: MySQLUser,
-	}).DSN()
-
-	Hostname = env.Get("HOSTNAME", MySQLHost)
-
-	if Debug == "true" {
+	if Debug {
 		log.SetLevel(log.DebugLevel)
 	}
 }
@@ -60,28 +27,40 @@ func main() {
 	log.DebugWithFields("Environment Variables", log.Fields{
 		"DEBUG":           Debug,
 		"HOSTNAME":        Hostname,
-		"INFLUXDB_BUCKET": InfluxDBBucket,
-		"INFLUXDB_HOST":   InfluxDBHost,
-		"INFLUXDB_PORT":   InfluxDBPort,
-		"INFLUXDB_TOKEN":  InfluxDBToken,
+		"INFLUXDB_BUCKET": influxDB.Bucket,
+		"INFLUXDB_HOST":   influxDB.Host,
+		"INFLUXDB_PORT":   influxDB.Port,
+		"INFLUXDB_TOKEN":  influxDB.Token,
 		"INTERVAL":        Interval,
-		"MYSQL_HOST":      MySQLHost,
-		"MYSQL_PASSWORD":  MySQLPassword,
-		"MYSQL_PORT":      MySQLPort,
-		"MYSQL_TIMEOUT":   MySQLTimeout,
-		"MYSQL_USER":      MySQLUser,
+		"MYSQL_HOST":      MySQL.Host,
+		"MYSQL_PASSWORD":  MySQL.Password,
+		"MYSQL_PORT":      MySQL.Port,
+		"MYSQL_TIMEOUT":   MySQL.Timeout,
+		"MYSQL_USER":      MySQL.Username,
 	})
 
-	InfluxDBConn = influxdb2.NewClient(fmt.Sprintf("%s:%d", InfluxDBHost, InfluxDBPort), InfluxDBToken)
-	defer InfluxDBConn.Close()
-	MySQLConn = mysql.New(MySQLHost, MySQLDSN)
-	defer MySQLConn.Close()
+	influxDB.New()
+	defer influxDB.Close()
+	MySQL.Connection = mysql.New(MySQL.Host, MySQL.DSN())
+	defer MySQL.Connection.Close()
 
 	for {
-		CollectVariables()
-		CollectStatus()
-		CollectInnoDB()
-		CollectReplica()
+		MySQL.Connection.Connect()
+
+		for _, metric := range Metrics {
+			MySQL.Connection.FetchAll(metric.Query, func(row map[string]string) {
+				if metric.Iterate {
+					for column, value := range row {
+						if valueParsed, ok := mysql.ParseNumberValue(value); ok {
+							influxDB.Write(Hostname, metric.Name, column, valueParsed)
+						}
+					}
+				} else if valueParsed, ok := mysql.ParseNumberValue(row[metric.Value]); ok {
+					influxDB.Write(Hostname, metric.Name, row[metric.Key], valueParsed)
+				}
+			})
+		}
+
 		log.Debug("Wait until next collect metrics.")
 		time.Sleep(Interval)
 	}
