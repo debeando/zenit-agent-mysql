@@ -20,6 +20,20 @@ docker run \
 	--env INFLUXDB_TOKEN="abc123cde456==" \
 	--env MYSQL_HOST=com-env-mysql-stack-node01.aws.com \
 	--env MYSQL_USER=monitor \
-	--env MYSQL_PASSWORD=passmon \
+	--env MYSQL_PASSWORD=monitor \
 	debeando/zenit-agent-mysql
 ```
+
+## MySQL Config
+
+Create a `monitor` user to allow access to agent.
+
+```sql
+CREATE USER monitor@'%' IDENTIFIED by 'monitor';
+ALTER USER monitor@'%' WITH MAX_USER_CONNECTIONS 5;
+GRANT REPLICATION CLIENT ON *.* TO monitor@'%';
+GRANT PROCESS ON *.* TO monitor@'%';
+GRANT SELECT ON *.* TO monitor@'%';
+```
+
+Please, change default password.
