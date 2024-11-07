@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/debeando/go-common/env"
-	"github.com/debeando/go-common/log"
 	"github.com/influxdata/influxdb-client-go/v2"
 )
 
@@ -32,27 +30,28 @@ func (i *InfluxDB) ServerURL() string {
 }
 
 func (i *InfluxDB) New() {
-	i.Connection = influxdb2.NewClient(i.ServerURL(), i.Token)
+	i.Connection = influxdb2.NewClientWithOptions(
+		i.ServerURL(),
+		i.Token,
+		influxdb2.DefaultOptions().SetBatchSize(100),
+	)
 }
 
-func (i *InfluxDB) Write(hostname, measurement, key string, value interface{}) {
-	go func() {
-		log.DebugWithFields(fmt.Sprintf("MySQL:%s", measurement), log.Fields{
-			"hostname": hostname,
-			key:        value,
-		})
+func (i *InfluxDB) Write(metrics Metrics) {
+	writeAPI := i.Connection.WriteAPI("debeando", i.Bucket)
 
-		err := i.Connection.WriteAPIBlocking("debeando", i.Bucket).WritePoint(
-			context.Background(),
-			influxdb2.NewPointWithMeasurement(measurement).
-				AddTag("_hostname", hostname).
-				AddField(key, value).
-				SetTime(time.Now()),
+	for _, metric := range metrics {
+		point := influxdb2.NewPoint(
+			metric.Measurement,
+			metric.TagsToMap(),
+			metric.FieldsToMap(),
+			time.Now(),
 		)
-		if err != nil {
-			log.Error(err.Error())
-		}
-	}()
+
+		writeAPI.WritePoint(point)
+	}
+
+	writeAPI.Flush()
 }
 
 func (i *InfluxDB) Close() {

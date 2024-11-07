@@ -8,30 +8,21 @@ import (
 	"github.com/debeando/go-common/mysql"
 )
 
-var Debug bool
-var Hostname string
-var Interval time.Duration
-
-func init() {
-	Debug = env.GetBool("DEBUG", true)
-	Interval = time.Duration(env.GetInt("INTERVAL", 3)) * time.Second
-	Hostname = env.Get("HOSTNAME", MySQL.Host)
-
-	if Debug {
-		log.SetLevel(log.DebugLevel)
-	}
-}
-
 func main() {
 	log.Info("Start DeBeAndo Zenit Agent for MySQL")
+
+	if getDebug() {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	log.DebugWithFields("Environment Variables", log.Fields{
-		"DEBUG":           Debug,
-		"HOSTNAME":        Hostname,
+		"DEBUG":           getDebug(),
+		"HOSTNAME":        getHostname(),
 		"INFLUXDB_BUCKET": influxDB.Bucket,
 		"INFLUXDB_HOST":   influxDB.Host,
 		"INFLUXDB_PORT":   influxDB.Port,
 		"INFLUXDB_TOKEN":  influxDB.Token,
-		"INTERVAL":        Interval,
+		"INTERVAL":        getInterval(),
 		"MYSQL_HOST":      MySQL.Host,
 		"MYSQL_PASSWORD":  MySQL.Password,
 		"MYSQL_PORT":      MySQL.Port,
@@ -45,23 +36,60 @@ func main() {
 	defer MySQL.Connection.Close()
 
 	for {
+		metrics := Metrics{}
 		MySQL.Connection.Connect()
 
-		for _, metric := range Metrics {
-			MySQL.Connection.FetchAll(metric.Query, func(row map[string]string) {
-				if metric.Iterate {
+		for _, query := range Queries {
+			metric := Metric{}
+			MySQL.Connection.FetchAll(query.Statement, func(row map[string]string) {
+				metric.Measurement = query.Name
+				metric.AddTag(Tag{
+					Name:  "server",
+					Value: getHostname(),
+				})
+
+				if query.UnPivot {
 					for column, value := range row {
 						if valueParsed, ok := mysql.ParseNumberValue(value); ok {
-							influxDB.Write(Hostname, metric.Name, column, valueParsed)
+							metric.AddField(Field{
+								Name:  column,
+								Value: valueParsed,
+							})
+						} else {
+							metric.AddTag(Tag{
+								Name:  column,
+								Value: value,
+							})
 						}
 					}
-				} else if valueParsed, ok := mysql.ParseNumberValue(row[metric.Value]); ok {
-					influxDB.Write(Hostname, metric.Name, row[metric.Key], valueParsed)
+				} else if valueParsed, ok := mysql.ParseNumberValue(row[query.Value]); ok {
+					metric.AddField(Field{
+						Name:  row[query.Key],
+						Value: valueParsed,
+					})
 				}
 			})
+			metrics.Add(metric)
 		}
 
+		if metrics.Count() > 0 {
+			influxDB.Write(metrics)
+		}
+
+		metrics.Reset()
 		log.Debug("Wait until next collect metrics.")
-		time.Sleep(Interval)
+		time.Sleep(getInterval())
 	}
+}
+
+func getDebug() bool {
+	return env.GetBool("DEBUG", true)
+}
+
+func getInterval() time.Duration {
+	return time.Duration(env.GetInt("INTERVAL", 3)) * time.Second
+}
+
+func getHostname() string {
+	return env.Get("HOSTNAME", MySQL.Host)
 }
