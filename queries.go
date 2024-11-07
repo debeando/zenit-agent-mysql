@@ -56,8 +56,7 @@ var Queries = []Query{
         FROM performance_schema.events_statements_summary_by_digest
         WHERE SCHEMA_NAME NOT IN ('mysql', 'performance_schema', 'information_schema')
             AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND)
-        ORDER BY SUM_TIMER_WAIT DESC
-        LIMIT 3;
+        ORDER BY SUM_TIMER_WAIT DESC;
         `, int(getInterval().Seconds())),
 		UnPivot: true,
 	},
