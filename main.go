@@ -41,6 +41,7 @@ func main() {
 
 		for _, query := range Queries {
 			metric := Metric{}
+
 			MySQL.Connection.FetchAll(query.Statement, func(row map[string]string) {
 				metric.Measurement = query.Name
 				metric.AddTag(Tag{
@@ -69,6 +70,7 @@ func main() {
 					})
 				}
 			})
+
 			metrics.Add(metric)
 		}
 
