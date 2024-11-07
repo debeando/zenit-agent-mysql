@@ -17,7 +17,6 @@ func main() {
 
 	log.DebugWithFields("Environment Variables", log.Fields{
 		"DEBUG":           getDebug(),
-		"HOSTNAME":        getHostname(),
 		"INFLUXDB_BUCKET": influxDB.Bucket,
 		"INFLUXDB_HOST":   influxDB.Host,
 		"INFLUXDB_PORT":   influxDB.Port,
@@ -28,6 +27,7 @@ func main() {
 		"MYSQL_PORT":      MySQL.Port,
 		"MYSQL_TIMEOUT":   MySQL.Timeout,
 		"MYSQL_USER":      MySQL.Username,
+		"SERVER":          getServer(),
 	})
 
 	influxDB.New()
@@ -46,7 +46,7 @@ func main() {
 				metric.Measurement = query.Name
 				metric.AddTag(Tag{
 					Name:  "server",
-					Value: getHostname(),
+					Value: getServer(),
 				})
 
 				if query.UnPivot {
@@ -92,6 +92,6 @@ func getInterval() time.Duration {
 	return time.Duration(env.GetInt("INTERVAL", 3)) * time.Second
 }
 
-func getHostname() string {
-	return env.Get("HOSTNAME", MySQL.Host)
+func getServer() string {
+	return env.Get("SERVER", MySQL.Host)
 }
