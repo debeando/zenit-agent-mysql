@@ -38,7 +38,7 @@ var Queries = []Query{
 		Name: "mysql_performance_schema",
 		Statement: fmt.Sprintf(`
 		SELECT
-            ifnull(SCHEMA_NAME, 'NONE') as SCHEMA_NAME,
+            ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
             DIGEST,
             DIGEST_TEXT,
             COUNT_STAR,
@@ -55,8 +55,23 @@ var Queries = []Query{
             SUM_NO_INDEX_USED
         FROM performance_schema.events_statements_summary_by_digest
         WHERE SCHEMA_NAME NOT IN ('mysql', 'performance_schema', 'information_schema')
-            AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND)
+          AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND)
         ORDER BY SUM_TIMER_WAIT DESC;
+        `, int(getInterval().Seconds())),
+		UnPivot: true,
+	},
+	Query{
+		Name: "mysql_query_latency",
+		Statement: fmt.Sprintf(`
+		SELECT
+			ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
+			sum(count_star) AS count_star,
+			round(avg_timer_wait/1000000, 0) AS avg_time_us
+        FROM performance_schema.events_statements_summary_by_digest
+        WHERE SCHEMA_NAME NOT IN ('mysql', 'performance_schema', 'information_schema')
+          AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND)
+        GROUP BY SCHEMA_NAME
+        ORDER BY avg_time_us DESC;
         `, int(getInterval().Seconds())),
 		UnPivot: true,
 	},
