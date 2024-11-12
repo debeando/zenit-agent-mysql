@@ -103,6 +103,21 @@ var Queries = []*Query{
         `,
 		UnPivot: true,
 	},
+	&Query{
+		Interval: 3600,
+		Name:     "mysql_tables",
+		Statement: `
+        SELECT
+            table_schema AS SCHEMA_NAME,
+            table_name,
+            COALESCE(data_length + index_length, 0) AS 'table_size',
+            COALESCE(table_rows, 0) AS 'table_rows'
+        FROM information_schema.tables
+        WHERE table_schema NOT IN ('mysql','sys','performance_schema','information_schema')
+        ORDER BY table_schema, table_name;
+        `,
+		UnPivot: true,
+	},
 }
 
 func (q *Query) Beautifier() string {
