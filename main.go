@@ -30,6 +30,7 @@ func main() {
 		"SERVER":          getServer(),
 	})
 
+	queries := Queries
 	influxDB.New()
 	defer influxDB.Close()
 	MySQL.Connection = mysql.New(MySQL.Host, MySQL.DSN())
@@ -37,10 +38,15 @@ func main() {
 
 	for {
 		metrics := Metrics{}
+
 		MySQL.Connection.Connect()
 
-		for _, query := range Queries {
+		for _, query := range queries {
 			metric := Metric{}
+
+			if !query.IsTime(query.Interval) {
+				continue
+			}
 
 			MySQL.Connection.FetchAll(query.Beautifier(), func(row map[string]string) {
 				metric.Measurement = query.Name

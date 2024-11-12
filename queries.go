@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Query struct {
+	Counter   int64
+	Interval  int
 	Key       string
 	Name      string
 	Statement string
@@ -13,34 +16,34 @@ type Query struct {
 	Value     string
 }
 
-var Queries = []Query{
-	Query{
+var Queries = []*Query{
+	&Query{
 		Name:      "mysql_variables",
 		Statement: "SHOW GLOBAL VARIABLES",
 		Key:       "Variable_name",
 		Value:     "Value",
 	},
-	Query{
+	&Query{
 		Name:      "mysql_status",
 		Statement: "SHOW GLOBAL STATUS",
 		Key:       "Variable_name",
 		Value:     "Value",
 	},
-	Query{
+	&Query{
 		Name:      "mysql_replica",
 		Statement: "SHOW REPLICA STATUS",
 		UnPivot:   true,
 	},
-	Query{
+	&Query{
 		Statement: "SELECT name, count FROM information_schema.innodb_metrics WHERE status='enabled'",
 		Name:      "mysql_innodb",
 		Key:       "name",
 		Value:     "count",
 	},
-	Query{
+	&Query{
 		Name: "mysql_performance_schema",
 		Statement: fmt.Sprintf(`
-		SELECT
+        SELECT
             ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
             DIGEST,
             DIGEST_TEXT,
@@ -63,10 +66,10 @@ var Queries = []Query{
         `, int(getInterval().Seconds())),
 		UnPivot: true,
 	},
-	Query{
+	&Query{
 		Name: "mysql_query_latency",
 		Statement: fmt.Sprintf(`
-		SELECT
+        SELECT
             ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
             sum(count_star) AS count_star,
             round(avg_timer_wait/1000000, 0) AS avg_time_us
@@ -76,6 +79,28 @@ var Queries = []Query{
         GROUP BY SCHEMA_NAME
         ORDER BY avg_time_us DESC;
         `, int(getInterval().Seconds())),
+		UnPivot: true,
+	},
+	&Query{
+		Interval: 3600,
+		Name:     "mysql_overflow",
+		Statement: `
+        SELECT
+            t.table_schema AS SCHEMA_NAME,
+            t.table_name,
+            t.table_rows,
+            t.auto_increment,
+            (SELECT column_type FROM information_schema.columns WHERE table_schema = t.table_schema AND table_name = t.table_name AND extra = 'auto_increment' LIMIT 1) AS auto_increment_data_type,
+            (CASE 
+               WHEN (SELECT column_type FROM information_schema.columns WHERE table_schema = t.table_schema AND table_name = t.table_name AND extra = 'auto_increment' LIMIT 1) IN ('int unsigned', "int(10) unsigned") THEN ROUND( (t.auto_increment/4294967295)*100 , 2)
+               WHEN (SELECT column_type FROM information_schema.columns WHERE table_schema = t.table_schema AND table_name = t.table_name AND extra = 'auto_increment' LIMIT 1) IN ('int(11)', 'int') THEN ROUND( (t.auto_increment/2147483647)*100, 2)
+               WHEN (SELECT column_type FROM information_schema.columns WHERE table_schema = t.table_schema AND table_name = t.table_name AND extra = 'auto_increment' LIMIT 1) IN ('bigint unsigned', 'bigint(20) unsigned') THEN ROUND( (t.auto_increment/(POWER(2, 64) -1))*100 , 2 )
+               WHEN (SELECT column_type FROM information_schema.columns WHERE table_schema = t.table_schema AND table_name = t.table_name AND extra = 'auto_increment' LIMIT 1) IN ('bigint(20)', 'bigint' ) THEN ROUND( (t.auto_increment/(POWER(2, 64) -1))*100 , 2 )
+            END) AS auto_increment_pct
+        FROM information_schema.tables t
+        WHERE t.table_schema NOT IN ('sys', 'mysql', 'performance_schema', 'information_schema')
+          AND t.auto_increment IS NOT NULL;
+        `,
 		UnPivot: true,
 	},
 }
@@ -88,4 +113,18 @@ func (q *Query) Beautifier() string {
 	q.Statement = strings.Trim(q.Statement, " ")
 
 	return q.Statement
+}
+
+func (q *Query) IsTime(i int) bool {
+	if q.Interval == 0 {
+		return true
+	}
+
+	if q.Counter == 0 || int(time.Since(time.Unix(q.Counter, 0)).Seconds()) >= i {
+		(*q).Counter = int64(time.Now().Unix())
+
+		return true
+	}
+
+	return false
 }
