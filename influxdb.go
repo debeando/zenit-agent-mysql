@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net/url"
+	"os"
 	"time"
 
 	"github.com/debeando/go-common/env"
+	"github.com/debeando/go-common/log"
 	"github.com/influxdata/influxdb-client-go/v2"
 )
 
@@ -23,6 +26,15 @@ func init() {
 	influxDB.Port = env.GetUInt16("INFLUXDB_PORT", 8086)
 	influxDB.Token = env.Get("INFLUXDB_TOKEN", "")
 	influxDB.Bucket = env.Get("INFLUXDB_BUCKET", "debeando")
+
+	_, err := url.ParseRequestURI(influxDB.Host)
+	if err != nil {
+		log.ErrorWithFields("Invalid value on environment variable: INFLUXDB_HOST", log.Fields{
+			"message": err.Error(),
+			"value":   influxDB.Host,
+		})
+		os.Exit(1)
+	}
 }
 
 func (i *InfluxDB) ServerURL() string {
