@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Query struct {
 	Key       string
@@ -64,9 +67,9 @@ var Queries = []Query{
 		Name: "mysql_query_latency",
 		Statement: fmt.Sprintf(`
 		SELECT
-			ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
-			sum(count_star) AS count_star,
-			round(avg_timer_wait/1000000, 0) AS avg_time_us
+            ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
+            sum(count_star) AS count_star,
+            round(avg_timer_wait/1000000, 0) AS avg_time_us
         FROM performance_schema.events_statements_summary_by_digest
         WHERE SCHEMA_NAME NOT IN ('mysql', 'performance_schema', 'information_schema')
           AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND)
@@ -75,4 +78,14 @@ var Queries = []Query{
         `, int(getInterval().Seconds())),
 		UnPivot: true,
 	},
+}
+
+func (q *Query) Beautifier() string {
+	q.Statement = strings.ReplaceAll(q.Statement, "\r\n", " ")
+	q.Statement = strings.ReplaceAll(q.Statement, "\n", " ")
+	q.Statement = strings.ReplaceAll(q.Statement, "\t", " ")
+	q.Statement = strings.ReplaceAll(q.Statement, "  ", "")
+	q.Statement = strings.Trim(q.Statement, " ")
+
+	return q.Statement
 }
