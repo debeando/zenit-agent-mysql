@@ -15,7 +15,7 @@ deps: ## Download dependencies
 build: ## Build binary for local operating system
 	@go env -w CGO_ENABLED="0"
 	@go generate ./...
-	@go build -ldflags "-s -w" -o zenit-agent-mysql *.go
+	@go build -ldflags "-s -w" -o agent-mysql *.go
 
 tests: ## Run tests
 	@go generate ./...

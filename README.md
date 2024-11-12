@@ -1,4 +1,4 @@
-# DeBeAndo Zenit Agent MySQL
+# DeBeAndo Agent for MySQL
 
 Database monitoring tool designed for small environments, adapted for Kubernetes and send metrics to InfluxDB.
 
@@ -12,7 +12,7 @@ To run container:
 
 ```bash
 docker run \
-	--name zenit-agent-mysql \
+	--name debeando-agent-mysql \
 	--env DEBUG=true \
 	--env INTERVAL=10 \
 	--env INFLUXDB_HOST=com-env-influxdb-observability-node01.aws.com \
@@ -21,7 +21,7 @@ docker run \
 	--env MYSQL_USER=monitor \
 	--env MYSQL_PASSWORD=monitor \
 	--env SERVER=com-env-mysql-stack-node01 \
-	debeando/zenit-agent-mysql
+	debeando/agent-mysql
 ```
 
 ## MySQL Config
