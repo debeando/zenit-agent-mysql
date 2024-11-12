@@ -1,4 +1,4 @@
-module github.com/debeando/zenit-agent-mysql
+module github.com/debeando/agent-mysql
 
 go 1.23.2
 

@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	log.Info("Start DeBeAndo Zenit Agent for MySQL")
+	log.Info("Start DeBeAndo Agent for MySQL")
 
 	if getDebug() {
 		log.SetLevel(log.DebugLevel)
