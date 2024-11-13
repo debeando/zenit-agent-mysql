@@ -41,32 +41,6 @@ var Queries = []*Query{
 		Value:     "count",
 	},
 	&Query{
-		Name: "mysql_performance_schema",
-		Statement: fmt.Sprintf(`
-        SELECT
-            ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
-            DIGEST,
-            DIGEST_TEXT,
-            COUNT_STAR,
-            SUM_TIMER_WAIT,
-            SUM_ERRORS,
-            SUM_WARNINGS,
-            SUM_ROWS_AFFECTED,
-            SUM_ROWS_SENT,
-            SUM_ROWS_EXAMINED,
-            SUM_CREATED_TMP_DISK_TABLES,
-            SUM_CREATED_TMP_TABLES,
-            SUM_SORT_MERGE_PASSES,
-            SUM_SORT_ROWS,
-            SUM_NO_INDEX_USED
-        FROM performance_schema.events_statements_summary_by_digest
-        WHERE SCHEMA_NAME NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
-          AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND)
-        ORDER BY SUM_TIMER_WAIT DESC;
-        `, int(getInterval().Seconds())),
-		UnPivot: true,
-	},
-	&Query{
 		Name: "mysql_query_latency",
 		Statement: fmt.Sprintf(`
         SELECT
@@ -76,8 +50,7 @@ var Queries = []*Query{
         FROM performance_schema.events_statements_summary_by_digest
         WHERE SCHEMA_NAME NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
           AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND)
-        GROUP BY SCHEMA_NAME
-        ORDER BY avg_time_us DESC;
+        GROUP BY SCHEMA_NAME;
         `, int(getInterval().Seconds())),
 		UnPivot: true,
 	},
@@ -113,8 +86,7 @@ var Queries = []*Query{
             COALESCE(data_length + index_length, 0) AS 'table_size',
             COALESCE(table_rows, 0) AS 'table_rows'
         FROM information_schema.tables
-        WHERE table_schema NOT IN ('mysql','sys','performance_schema','information_schema')
-        ORDER BY table_schema, table_name;
+        WHERE table_schema NOT IN ('mysql','sys','performance_schema','information_schema');
         `,
 		UnPivot: true,
 	},
