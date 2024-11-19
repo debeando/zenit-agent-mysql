@@ -37,3 +37,17 @@ GRANT SELECT ON *.* TO monitor@'%';
 ```
 
 Please, change default password `<monitor-pass>`.
+
+## Environment Variables
+
+When you start the `agent-mysql` image, you can adjust the configuration of the agent instance by passing one or more environment variables on the docker run command line.
+
+- **DEBUG:** Enable debug mode with `true` value, by default value is `false`.
+- **DISABLE:** Disable specific metric, list separated by comma, by default is empty.
+- **INTERVAL:** Interval time in second, by default value is `10`.
+- **INFLUXDB_HOST:** The HTTP hostname or IP address.
+- **INFLUXDB_TOKEN:** The authentication token for connecting to the InfluxDB instance.
+- **MYSQL_HOST:** The hostname or IP address of the MySQL server to be monitored.
+- **MYSQL_USER:** The MySQL username to connect with.
+- **MYSQL_PASSWORD:** The password associated with the specified MySQL user.
+- **SERVER:** The name of running the agent.
