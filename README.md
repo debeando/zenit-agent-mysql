@@ -15,12 +15,12 @@ docker run \
 	--name debeando-agent-mysql \
 	--env DEBUG=true \
 	--env INTERVAL=10 \
-	--env INFLUXDB_HOST=http://com-env-influxdb-observability-node01.aws.com \
+	--env INFLUXDB_HOST="http://com-env-influxdb-observability-node01.aws.com" \
 	--env INFLUXDB_TOKEN="abc123cde456==" \
-	--env MYSQL_HOST=com-env-mysql-stack-node01.aws.com \
-	--env MYSQL_USER=monitor \
-	--env MYSQL_PASSWORD=monitor \
-	--env SERVER=com-env-mysql-stack-node01 \
+	--env MYSQL_HOST="com-env-mysql-stack-node01.aws.com" \
+	--env MYSQL_USER="monitor" \
+	--env MYSQL_PASSWORD="<monitor-pass>" \
+	--env SERVER="com-env-mysql-stack-node01" \
 	debeando/agent-mysql
 ```
 
@@ -29,11 +29,11 @@ docker run \
 Create a `monitor` user to allow access to agent.
 
 ```sql
-CREATE USER monitor@'%' IDENTIFIED by 'monitor';
+CREATE USER monitor@'%' IDENTIFIED by '<monitor-pass>';
 ALTER USER monitor@'%' WITH MAX_USER_CONNECTIONS 5;
 GRANT REPLICATION CLIENT ON *.* TO monitor@'%';
 GRANT PROCESS ON *.* TO monitor@'%';
 GRANT SELECT ON *.* TO monitor@'%';
 ```
 
-Please, change default password.
+Please, change default password `<monitor-pass>`.
