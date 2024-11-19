@@ -41,7 +41,7 @@ var Queries = []*Query{
 		Value:     "count",
 	},
 	&Query{
-		Name: "mysql_query_latency",
+		Name: "mysql_latency",
 		Statement: fmt.Sprintf(`
         SELECT
             ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
