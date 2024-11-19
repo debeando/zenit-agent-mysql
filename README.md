@@ -15,7 +15,7 @@ docker run \
 	--name debeando-agent-mysql \
 	--env DEBUG=true \
 	--env INTERVAL=10 \
-	--env INFLUXDB_HOST=com-env-influxdb-observability-node01.aws.com \
+	--env INFLUXDB_HOST=http://com-env-influxdb-observability-node01.aws.com \
 	--env INFLUXDB_TOKEN="abc123cde456==" \
 	--env MYSQL_HOST=com-env-mysql-stack-node01.aws.com \
 	--env MYSQL_USER=monitor \
