@@ -55,6 +55,16 @@ var Queries = []*Query{
 		UnPivot: true,
 	},
 	&Query{
+		Name: "mysql_errors",
+		Statement: fmt.Sprintf(`
+        SELECT ERROR_NUMBER, SQL_STATE, ERROR_NAME, SUM_ERROR_RAISED
+        FROM performance_schema.events_errors_summary_global_by_error
+        WHERE SUM_ERROR_RAISED > 0
+          AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND);
+        `, int(getInterval().Seconds())),
+		UnPivot: true,
+	},
+	&Query{
 		Interval: 3600,
 		Name:     "mysql_overflow",
 		Statement: `
