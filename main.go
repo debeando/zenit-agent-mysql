@@ -1,6 +1,8 @@
 package main
 
 import (
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/debeando/go-common/env"
@@ -17,6 +19,7 @@ func main() {
 
 	log.DebugWithFields("Environment Variables", log.Fields{
 		"DEBUG":           getDebug(),
+		"DISABLE":         getDisableList(),
 		"INFLUXDB_BUCKET": influxDB.Bucket,
 		"INFLUXDB_HOST":   influxDB.Host,
 		"INFLUXDB_PORT":   influxDB.Port,
@@ -44,6 +47,13 @@ func main() {
 			metric := Metric{}
 
 			if !query.IsTime(query.Interval) {
+				continue
+			}
+
+			if slices.Contains(getDisableList(), query.Name) {
+				log.DebugWithFields("Ignore metric collect", log.Fields{
+					"name": query.Name,
+				})
 				continue
 			}
 
@@ -99,4 +109,14 @@ func getInterval() time.Duration {
 
 func getServer() string {
 	return env.Get("SERVER", MySQL.Host)
+}
+
+func getDisableList() []string {
+	list := strings.Split(env.Get("DISABLE", ""), ",")
+
+	for item := range list {
+		list[item] = strings.TrimSpace(list[item])
+	}
+
+	return list
 }
