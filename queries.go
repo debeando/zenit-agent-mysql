@@ -81,7 +81,7 @@ var Queries = []*Query{
                WHEN (SELECT column_type FROM information_schema.columns WHERE table_schema = t.table_schema AND table_name = t.table_name AND extra = 'auto_increment' LIMIT 1) IN ('bigint(20)', 'bigint' ) THEN ROUND( (t.auto_increment/(POWER(2, 64) -1))*100 , 2 )
             END) AS auto_increment_pct
         FROM information_schema.tables t
-        WHERE t.table_schema NOT IN ('sys', 'mysql', 'performance_schema', 'information_schema')
+        WHERE t.table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
           AND t.auto_increment IS NOT NULL;
         `,
 		UnPivot: true,
@@ -96,7 +96,7 @@ var Queries = []*Query{
             COALESCE(data_length + index_length, 0) AS 'table_size',
             COALESCE(table_rows, 0) AS 'table_rows'
         FROM information_schema.tables
-        WHERE table_schema NOT IN ('mysql','sys','performance_schema','information_schema');
+        WHERE table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys');
         `,
 		UnPivot: true,
 	},
