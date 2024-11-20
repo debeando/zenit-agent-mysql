@@ -100,6 +100,31 @@ var Queries = []*Query{
         `,
 		UnPivot: true,
 	},
+	&Query{
+		Name: "mysql_statements",
+		Statement: fmt.Sprintf(`
+        SELECT
+            ifnull(SCHEMA_NAME, 'NONE') AS SCHEMA_NAME,
+            DIGEST,
+            DIGEST_TEXT,
+            COUNT_STAR,
+            SUM_TIMER_WAIT,
+            SUM_ERRORS,
+            SUM_WARNINGS,
+            SUM_ROWS_AFFECTED,
+            SUM_ROWS_SENT,
+            SUM_ROWS_EXAMINED,
+            SUM_CREATED_TMP_DISK_TABLES,
+            SUM_CREATED_TMP_TABLES,
+            SUM_SORT_MERGE_PASSES,
+            SUM_SORT_ROWS,
+            SUM_NO_INDEX_USED
+        FROM performance_schema.events_statements_summary_by_digest
+        WHERE SCHEMA_NAME NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
+          AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND);
+        `, int(getInterval().Seconds())),
+		UnPivot: true,
+	},
 }
 
 func (q *Query) Beautifier() string {
